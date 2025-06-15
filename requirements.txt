@@ -56,3 +56,4 @@ websockets
 yarl
 tzdata
 python-dateutil
+langgraph

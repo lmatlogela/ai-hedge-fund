@@ -1,0 +1,13 @@
+streamlit>=1.24.0
+pandas
+numpy
+openai
+pinecone-client
+alpaca-trade-api
+matplotlib
+requests
+scikit-learn
+python-dotenv
+tqdm
+plotly
+yfinance

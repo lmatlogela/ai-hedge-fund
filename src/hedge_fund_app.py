@@ -1,9 +1,8 @@
 import streamlit as st
 from datetime import datetime
-from PIL import Image
-import base64
+from main import run_hedge_fund, ANALYST_ORDER, LLM_ORDER  # Adjust if needed
 
-# === Optional: Add a background image for "glassmorphism" effect ===
+# --- Glassmorphism background & styles ---
 def add_bg_from_url():
     st.markdown(
         f"""
@@ -14,7 +13,6 @@ def add_bg_from_url():
             background-size: cover;
             background-attachment: fixed;
         }}
-        /* Glassmorphism card effect */
         .block-container {{
             background: rgba(24, 27, 48, 0.7);
             border-radius: 22px;
@@ -25,10 +23,9 @@ def add_bg_from_url():
         """,
         unsafe_allow_html=True
     )
-
 add_bg_from_url()
 
-# === Futuristic Header with animation ===
+# --- Header ---
 st.markdown("""
 <div style='text-align: center;'>
     <h1 style='font-size: 3.2rem; letter-spacing: 2px; background: linear-gradient(90deg,#0fffc1,#7e48ff 70%,#ffa9f9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight:900; margin-bottom:0;'>
@@ -39,7 +36,6 @@ st.markdown("""
     </span>
 </div>
 """, unsafe_allow_html=True)
-
 st.markdown("---")
 
 with st.container():
@@ -59,8 +55,6 @@ with st.container():
             format="%i"
         )
 
-    st.write("")
-
     date1, date2 = st.columns(2)
     with date1:
         start_date = st.date_input("Start Date", datetime(2024, 1, 1))
@@ -68,36 +62,23 @@ with st.container():
         end_date = st.date_input("End Date", datetime.today())
 
     st.markdown("---")
-
-    # ==== Analysts Section ====
+    # --- Analysts Section ---
     st.subheader("Select Your Virtual Investment Team 👨‍💼👩‍💼")
-    analyst_options = [
-        "Warren Buffett", "Charlie Munger", "Cathie Wood",
-        "Ben Graham", "Bill Ackman", "Michael Burry",
-        "Peter Lynch", "Phil Fisher", "Stanley Druckenmiller",
-        "Rakesh Jhunjhunwala", "Valuation Agent", "Sentiment Agent",
-        "Fundamentals Agent", "Technicals Agent"
-    ]
+    analyst_options = [display for display, value in ANALYST_ORDER]
+    default_analysts = analyst_options[:2] if len(analyst_options) >= 2 else analyst_options
     selected_analysts = st.multiselect(
         "AI Analysts",
         analyst_options,
-        default=["Warren Buffett", "Cathie Wood"]
+        default=default_analysts
     )
 
     st.markdown("---")
-    # ==== LLM Model Selection ====
+    # --- LLM Model Selection ---
     st.subheader("Choose Your LLM Engine 🤖")
-    llm_models = [
-        "gpt-4o (OpenAI)",
-        "gpt-4 (OpenAI)",
-        "Llama 3 (Groq)",
-        "Gemini (Google)",
-        "DeepSeek (Groq)",
-        "Mixtral (Groq)"
-    ]
+    llm_models = [f"{name} ({provider})" for display, name, provider in LLM_ORDER]
     model_name = st.selectbox("Select LLM Model", llm_models, index=0)
 
-    # ==== Margin, Reasoning, and Graph Toggles ====
+    # --- Margin, Reasoning, and Graph Toggles ---
     margin, reasoning, show_graph = st.columns(3)
     with margin:
         margin_requirement = st.number_input(
@@ -109,26 +90,49 @@ with st.container():
         show_agent_graph = st.toggle("Show Agent Graph", value=False)
 
     st.markdown("---")
-    # ==== Run Button ====
+    # --- Run Button ---
     run_btn = st.button("🚀 Run AI Hedge Fund", use_container_width=True)
-
-    # === Output Section ===
     st.markdown("## Results")
     results_placeholder = st.empty()
 
-    # === Simulate running the AI Hedge Fund ===
+    # --- Run hedge fund simulation ---
     if run_btn:
-        import time
         with st.spinner("Simulating trading decisions with your AI team..."):
-            time.sleep(2.3)  # Simulate AI thinking
-            # Place your business logic call here, for example:
-            # result = run_hedge_fund(...)
-            st.success("Simulation complete! (Insert trading results here)")
-            results_placeholder.info("⚡ This would display trade decisions, P&L, risk metrics, graphs, etc.")
+            tickers_list = [t.strip() for t in tickers.split(",") if t.strip()]
+            # Setup portfolio structure (match your backend's requirements)
+            portfolio = {
+                "cash": initial_cash,
+                "margin_requirement": margin_requirement,
+                "margin_used": 0,
+                "positions": {t: {
+                    "long": 0, "short": 0, "long_cost_basis": 0.0,
+                    "short_cost_basis": 0.0, "short_margin_used": 0.0
+                } for t in tickers_list},
+                "realized_gains": {t: {"long": 0.0, "short": 0.0} for t in tickers_list}
+            }
+            try:
+                # Parse model choice
+                model_name_only, model_provider = model_name.split(" (")
+                model_provider = model_provider.replace(")", "")
+                # Call your actual logic
+                result = run_hedge_fund(
+                    tickers=tickers_list,
+                    start_date=start_date.strftime("%Y-%m-%d"),
+                    end_date=end_date.strftime("%Y-%m-%d"),
+                    portfolio=portfolio,
+                    show_reasoning=show_reasoning,
+                    selected_analysts=selected_analysts,
+                    model_name=model_name_only,
+                    model_provider=model_provider,
+                )
+                st.success("Simulation complete!")
+                results_placeholder.write(result)
+            except Exception as e:
+                st.error(f"Error running AI Hedge Fund: {e}")
 
 st.markdown("""
 <style>
-/* Make input fields, selects, and buttons futuristic */
+/* Futuristic field and button styling */
 input, select, button, textarea, .stButton > button {
     border-radius: 18px !important;
     border: 1.5px solid #7e48ff !important;
